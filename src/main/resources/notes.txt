@@ -1,0 +1,14 @@
+-- insert into User(id, username, scores) values (10001, 'user1', array[1,2,3] );
+
+insert into Users(id, username, password, roles, score) 
+values (10002, 'user2', 'password2', 'USER', 6 );
+
+insert into Users(id, username, password, roles, score)  
+values (10003, 'user3', 'password3', 'USER', 22 );
+
+insert into Users(id, username, password, roles, score) 
+values (10004, 'user4', 'password4', 'USER', 11 );
+
+insert into Users(id, username, password, roles, score) 
+values (10005, 'sponsky', 'password', 'USER,ADMIN', 16 );
+
