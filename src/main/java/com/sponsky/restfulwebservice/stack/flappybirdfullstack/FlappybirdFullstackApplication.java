@@ -23,6 +23,7 @@ public class FlappybirdFullstackApplication {
 	CommandLineRunner commandLineRunner(UserRepository users, PasswordEncoder encoder) {
 		return args -> {
 			users.save(new User("sponsky", encoder.encode("password"), "ADMIN"));
+			//users.save(new User("sponsky", "password", "ADMIN"));
 			users.save(new User("user2", encoder.encode("password2"), "USER"));
 		};
 	}

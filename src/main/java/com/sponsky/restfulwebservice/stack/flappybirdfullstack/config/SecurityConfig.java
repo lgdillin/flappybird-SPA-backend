@@ -7,14 +7,18 @@ import java.util.List;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -42,8 +46,8 @@ public class SecurityConfig {
 	
 	private final List<String> allowedOrigins = List.of("http://localhost:3000");
 	private final List<String> allowedMethods = List.of("*");
-	private final List<String> allowedHeaders = List.of("Authorization", "Content-Type");
-	private final String allowedPath = "/**";
+	private final List<String> allowedHeaders = List.of("*", "Authorization", "Content-Type");
+	private final String allowedMappings = "/**";
 	
 	
 	private RSAKey rsaKey;
@@ -53,11 +57,11 @@ public class SecurityConfig {
 		this.userDetailsJpaService = userDetailsJpaService;
 	}
 	
-	
 	// returns an authentication manager to use in the controller
 	@Bean
 	public AuthenticationManager authManager(UserDetailsJpaService userDetailsJpaService) {
 		var authProvider = new DaoAuthenticationProvider();
+		authProvider.setPasswordEncoder(passwordEncoder());
 		authProvider.setUserDetailsService(userDetailsJpaService);
 		return new ProviderManager(authProvider);
 	}
@@ -67,11 +71,17 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
+				
+				// Cross Origin Request
+				.cors(withDefaults())
+				
 				// Disable cross-site request forgery (Re-apply default configurations)
 				.csrf(csrf -> csrf
 						
 						// Use this method when creating exceptions for regular paths
-						.ignoringRequestMatchers("/token")
+						.ignoringRequestMatchers(
+								"/token",
+								"/createuser")
 						
 						// For H2 DATABASE Implementations ONLY:
 						.ignoringRequestMatchers(PathRequest.toH2Console())
@@ -88,7 +98,9 @@ public class SecurityConfig {
 						
 						// Deprecated method is antMatchers(), use requestMatchers()
 						// Use this method to create exceptions in the auth requirements
-						.requestMatchers("/token").permitAll()
+						.requestMatchers(
+								"/token",
+								"/createuser").permitAll()
 						
 						// For H2 DATABASE Implementations ONLY:
 						.requestMatchers(PathRequest.toH2Console()).permitAll()
@@ -97,7 +109,7 @@ public class SecurityConfig {
 						//.mvcMatchers("/api/posts/**").permitAll()
 						
 						// I don't know what this line is for, but it might be useful one day
-						//.requestMatchers(HttpMethod.OPTIONS,"/**")
+						.requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
 				
 						.anyRequest().authenticated()
 				)
@@ -111,28 +123,32 @@ public class SecurityConfig {
 				.headers(headers -> headers.frameOptions().sameOrigin())
 				
 				// Create a state-less session because we are using a REST API
-				//.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				
 				// Wires in a Bearer Token authentication filter
 				.oauth2ResourceServer(OAuth2ResourceServerConfigurer::jwt)
 				
 				// Spring Native login form for testing/debugging security settings
 				// (Disable for production/API use)
-				.formLogin(withDefaults())
+				//.formLogin(withDefaults())
 				
 				// Using HTTP basic security to get up and running
 				// Or to use with a simple login in order to get back the JWT bearer token
-				//.httpBasic(withDefaults()) 
+				.httpBasic(withDefaults()) 
 				
 				// Create the security filter chain
 				.build();
 	}
 	
 	// Securely hashes passwords with the BCrypt algorithm for secure storage in a DB
+	// doing a nasty little hack to prevent a circular dependency with the user service
 	@Bean
 	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
+		PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+		userDetailsJpaService.setPasswordEncoder(passwordEncoder);
+		return passwordEncoder;
 	}
+       
 	
 	@Bean
 	public JWKSource<SecurityContext> jwkSource() {
@@ -152,36 +168,34 @@ public class SecurityConfig {
 		return new NimbusJwtEncoder(jwks);
 	}
 	
-	
-	// Set the CORS configuration such that we can communicate with the frontend
+	// Manage Cross Origin Requests
 	@Bean
-	UrlBasedCorsConfigurationSource corsConfigurationSource() {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(allowedOrigins);
-		configuration.setAllowedMethods(allowedMethods);
-		configuration.setAllowedHeaders(allowedHeaders);
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration(allowedPath, configuration);
-		return source;
+	public WebMvcConfigurer corsConfigurer() {
+		return new WebMvcConfigurer() {
+			public void addCorsMappings(CorsRegistry registry) {
+				registry.addMapping(allowedMappings)
+					.allowedMethods(allowedMethods.get(0))
+					.allowedOrigins(allowedOrigins.get(0));
+			}
+		};
 	}
+	
+	
+//	//Set the CORS configuration such that we can communicate with the frontend
+//	@Bean
+//	UrlBasedCorsConfigurationSource corsConfigurationSource() {
+//		CorsConfiguration configuration = new CorsConfiguration();
+//		configuration.setAllowedOrigins(allowedOrigins);
+//		configuration.setAllowedMethods(allowedMethods);
+//		configuration.setAllowedHeaders(allowedHeaders);
+//		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//		source.registerCorsConfiguration(allowedMappings, configuration);
+//		return source;
+//	}
 	
 }
 	
 
-
-
-
-//	// Manage Cross Origin Requests
-//	@Bean
-//	public WebMvcConfigurer corsConfigurer() {
-//		return new WebMvcConfigurer() {
-//			public void addCorsMappings(CorsRegistry registry) {
-//				registry.addMapping("/**")
-//					.allowedMethods("*")
-//					.allowedOrigins("http://localhost:3000");
-//			}
-//		};
-//	}
 
 
 

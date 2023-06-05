@@ -34,14 +34,16 @@ public class UserJpaController {
 		return "Hello, " + authentication.getName(); 
 	}
 	
+	@GetMapping("/{username}")
+	public String testSimpleGetRequest(@PathVariable String username) {
+		return "Hello, " + username;
+	}
+	
 	// @PreAuthorize("hasRole('ADMIN')")
-	// Create a new user
+	// Create a new user by passing the object to the User Service
 	@PostMapping(path = "/createuser")
 	public User createUser(@RequestBody User user) {
-		user.setUsername(user.getUsername());
-		user.setPassword("placeholder");
-		user.setRoles("USER");
-		return userDetailsJpaService.save(user);
+		return userDetailsJpaService.createNewUser(user);
 	}
 
 	
@@ -63,14 +65,12 @@ public class UserJpaController {
 		userDetailsJpaService.save(user);
 	}
 	 
-	@PutMapping(path="/{username}/profile")
-	public User testMethod(@PathVariable String username, @RequestBody String imageData) {
-		User user = userDetailsJpaService.findByUsername(username).get();
-		
+	@PutMapping(path="/{username}/image")
+	public User updateUserImage(@PathVariable String username, @RequestBody String imageData) {
+		System.out.println("asdfasfdasdfasdf");
 		byte[] base64EncodedData = Base64.getEncoder().encode(imageData.getBytes());
 		byte[] decodedImageData = Base64.getDecoder().decode(new String(base64EncodedData).getBytes());
-		user.setImageData(decodedImageData);
-		return userDetailsJpaService.save(user);
+		return userDetailsJpaService.setUserProfilePicture(username, decodedImageData);
 	}
 	
 	@GetMapping(path="/{username}/profile/image")

@@ -29,12 +29,16 @@ public class AuthController {
 //		String token = tokenService.generateToken(authentication);
 //		LOG.debug("Token Granted {}", token);
 		
+		
+		
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(
 						userLogin.username(), 
 						userLogin.password()));
 		
+		var token = tokenService.generateToken(authentication);
 		
-		return tokenService.generateToken(authentication);
+		// System.out.println(token);
+		return token;
 	}
 }
