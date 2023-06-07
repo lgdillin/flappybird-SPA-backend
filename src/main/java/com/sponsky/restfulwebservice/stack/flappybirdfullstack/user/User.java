@@ -29,11 +29,22 @@ public class User {
 	
 	public User() {}
 	
+	
+	// USERNAME, PASSWORD, ROLES
 	public User(String username, String password, String roles) {
 		super();
 		this.username = username;
 		this.password = password;
 		this.roles = roles;
+	}
+	
+	// USERNAME, PASSWORD, ROLES, SCORE
+	public User(String username, String password, String roles, Integer score) {
+		super();
+		this.username = username;
+		this.password = password;
+		this.roles = roles;
+		this.score = score;
 	}
 	
 	public User(Integer id, String username, Integer score) {

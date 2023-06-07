@@ -42,6 +42,7 @@ public class UserDetailsJpaService implements UserDetailsService {
 		user.setUsername(user.getUsername());
 		user.setPassword(passwordEncoder.encode(user.getPassword()));
 		user.setRoles("USER");
+		user.setScore(0);
 		return userRepository.save(user);
 	}
 	

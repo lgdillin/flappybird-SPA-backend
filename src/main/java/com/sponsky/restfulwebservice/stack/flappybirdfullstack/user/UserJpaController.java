@@ -67,7 +67,6 @@ public class UserJpaController {
 	 
 	@PutMapping(path="/{username}/image")
 	public User updateUserImage(@PathVariable String username, @RequestBody String imageData) {
-		System.out.println("asdfasfdasdfasdf");
 		byte[] base64EncodedData = Base64.getEncoder().encode(imageData.getBytes());
 		byte[] decodedImageData = Base64.getDecoder().decode(new String(base64EncodedData).getBytes());
 		return userDetailsJpaService.setUserProfilePicture(username, decodedImageData);
